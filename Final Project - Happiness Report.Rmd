@@ -1,0 +1,428 @@
+---
+title: "Happiness Research"
+author: "Ishika Goyal and Rachel Gupta"
+date: "May 11th, 2022"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+
+# Introduction
+
+What is the World Happiness Report?
+The World Happiness Report is a publication sponsored by the Sustainable Development Solutions Network, and surveys the state of global happiness. With their data partner Gallup World Poll, this survey ranks approximately 156 countries each year by how happy their citizens perceive themselves to be. Leading experts from a variety of sectors – including economics, psychology, survey analysis, national statistics, health, and public policy – explain how well-being assessments can be used to analyze a country's progress. The dataset examines the current state of happiness in the world and demonstrates how the new science of happiness explains individual and national happiness variances.
+
+In 2015, the #1 rated country for happiness was Switzerland. Since then, the title has been passed to Denmark, Norway, and finally Finland. What caused these changes, and what makes these countries rate so highly?
+The World Happiness Report survey gives each country a “happiness score” based on answers to the poll question evaluating their life. The poll asks what is known as the “Cantril ladder question”: it asks respondents to think of a ladder, with the best possible life for them being a 10 and the worst possible life being a 0. They are then asked to rate their own current lives on that 0 to 10 scale. Following data columns discuss the country in terms of economy, health, family, etc. 
+
+The World Happiness Report has the potential to help us answer key questions. Firstly, it shows that we can use surveys as an indicator of happiness, and it gives us insight on factors that could determine well-being and explain patterns in global happiness over time and across nations. 
+Our Goal
+
+We have compiled data from the World Happiness Report over the years 2015 to 2019. Between these years, data was collected from between 155 and 158 countries. We aim to examine variables affecting happiness scores for each country, using correlation score, regression analysis, and regression trees. We also hope to look at the effect of time on these statistics, for individual countries as well as the world as a whole. 
+
+To measure happiness around the world, The World Happiness Report uses 6 differents factors:
+
+Gdp per capita: It's the midyear population divided by the gross domestic output. The Gross Domestic Product (GDP) is the total monetary or market worth of all finished products and services produced within a country's borders over a given time period.. The GDP formula: GDP=Consumption + Private domestic investment + Exports - Imports
+
+Social support: Individuals' contributions to society in terms of biological, psychological, and social pressures are referred to as social support.
+
+Healthy life expectancy: reflects the number of years individuals anticipate living in good health.
+
+Freedom to make life choices: represents the possibilities/opportunities that people have to pursue and choose theirs life goals and activities.
+
+Generosity:demonstrates how people feel about sharing and giving.
+
+Perception of corruption: The CPI calculates it (corruption perception index). It demonstrates how citizens view a country's corruption. The lower a country's score, the less corrupt it is thought to be.
+
+Link our data set : https://www.kaggle.com/datasets/unsdsn/world-happiness?select=2015.csv 
+The link contains datasets for the happiness report on 2015 to 2019.
+
+# Part 1: Data Cleaning
+
+Our first step of research is to read in our .csv files. We have a csv file for each year, which we convert into dataframes. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+library(rpart)
+library(tree)
+library(randomForest)
+library(gbm)
+library(plotly)
+```
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+data.2015 <- read.csv("2015.csv")
+data.2016 <- read.csv("2016.csv")
+data.2017 <- read.csv("2017.csv")
+data.2018 <- read.csv("2018.csv")
+data.2019 <- read.csv("2019.csv")
+
+```
+
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+data.2015 <- na.omit(data.2015)
+data.2016 <- na.omit(data.2016)
+data.2017 <- na.omit(data.2017)
+data.2019 <- na.omit(data.2019)
+
+
+```
+
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+data.2015$GDP <- data.2015$Economy..GDP.per.Capita.
+data.2015$Health <- data.2015$Health..Life.Expectancy.
+data.2015$Corruption <- data.2015$Trust..Government.Corruption.
+data.2015 <- subset.data.frame(data.2015, select = -c(6, 8, 10))
+
+data.2016$GDP <- data.2016$Economy..GDP.per.Capita.
+data.2016$Health <- data.2016$Health..Life.Expectancy.
+data.2016$Corruption <- data.2016$Trust..Government.Corruption.
+data.2016 <- subset.data.frame(data.2016, select = -c(7, 9, 11))
+
+data.2017$GDP <- data.2017$Economy..GDP.per.Capita.
+data.2017$Health <- data.2017$Health..Life.Expectancy.
+data.2017$Corruption <- data.2017$Trust..Government.Corruption.
+data.2017 <- subset.data.frame(data.2017, select = -c(6, 8, 11))
+
+data.2018$Family <- data.2018$Social.support
+data.2018$Health <- data.2018$Healthy.life.expectancy
+data.2018$Freedom <- data.2018$Freedom.to.make.life.choices
+data.2018$GDP <- data.2018$GDP.per.capita
+data.2018$Corruption <- data.2018$Perceptions.of.corruption
+data.2018 <- subset.data.frame(data.2018, select = -c(4, 5, 6, 7, 9))
+
+data.2019$Family <- data.2019$Social.support
+data.2019$Health <- data.2019$Healthy.life.expectancy
+data.2019$Freedom <- data.2019$Freedom.to.make.life.choices
+data.2019$GDP <- data.2019$GDP.per.capita
+data.2019$Corruption <- data.2019$Perceptions.of.corruption
+data.2019 <- subset.data.frame(data.2019, select = -c(4, 5, 6, 7, 9))
+
+
+```
+
+
+## Data Exploration
+
+This graph gives us an overview of our major regions and how their Happiness Scores fair.
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+plot_ly(data.2015,x=~Region,
+        y=~Happiness.Score,
+        type="box",
+        pointpos = -1.8,
+        color=~Region)
+```
+
+The graph below singles out the United States to find how they have ranked in happiness levels from 2015 to 2019. 
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+US2015 <- data.2015$Happiness.Rank[15]
+US2016 <- data.2016$Happiness.Rank[13]
+US2019 <- data.2019$Happiness.Rank[19]
+
+plot(c("2015", "2016", "2017", "2018", "2019"), c(15, 13, 14, 18, 19), ylab = "US Rank", xlab = "Year", ylim = c(20, 12), type = "b")
+```
+
+This graph shows how a country's Happiness Score directly correlates to their rank, which makes sense because rankings are determined by happiness scores compared to others. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+plot(Happiness.Score ~ Happiness.Rank, data = data.2015)
+```
+Next, we compare Happiness Score to GDP for the years 2015 and 2019. We chose GDP to show how the correlation between this single factor and happiness score can change over time. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+plot(Happiness.Score ~ GDP, data = data.2015, ylab = "2015 Happiness Score")
+
+plot(Score ~ GDP, data = data.2019, ylab = "2019 Happiness Score")
+
+
+```
+
+---
+
+# Part 2: Modeling and Prediction
+
+## Linear Regression
+
+We fit a linear regression model to our 2015 and 2019 data, in order to determine the effect that our variables have on Happiness Score of a country. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+fit.2015 <- lm(Happiness.Score ~ GDP + Family + Health + Freedom + Generosity + Corruption, data = data.2015)
+summary(fit.2015)
+
+fit.2019 <- lm(Score ~ GDP + Family + Health + Freedom + Generosity + Corruption, data = data.2019)
+summary(fit.2019)
+
+
+
+```
+
+Here, we show histograms of the residuals for each model. The residuals follow an approximately normal distribution. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+hist(fit.2015$residuals, prob = TRUE)
+lines(density(fit.2015$residuals))
+```
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+hist(fit.2019$residuals, prob = TRUE)
+lines(density(fit.2019$residuals))
+```
+
+Next, we use the R step function to find the best-fitting model. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+step(fit.2015)
+step(fit.2019)
+
+```
+
+Here, we plot a graph of the residuals versus fitted values to show that the residuals are evenly distributed, and show a qq plot of the residuals to show that since the plot forms a straight line, the residuals have a normal distribution. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+# FROM the step() formula, we know that Generosity isn't important. Taking it out:
+
+fit2.2015 <- lm(formula = Happiness.Score ~ GDP + Family + 
+    Health + Freedom + Corruption, 
+    data = data.2015)
+
+plot(fit2.2015$residuals~fit2.2015$fitted.values)
+abline(h=0)
+
+qqnorm(fit2.2015$residuals)
+
+shapiro.test(fit2.2015$residuals)
+
+```
+
+### 10 Fold Validation
+From the step model above, we saw the the "Generosity" factor was not strongly correlated. Therefore, we created two models: one using all our variables including Generosity (the step model), and one without (the man model). 
+Next, we test the error of our models by created test and training sets and completing 10 fold validation. Below, you can see the resulting RSME over the number of folds, as well as the relative error distribution for both models. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+# set the seed according to the current version of R
+RNGversion("4.1.2")
+set.seed(123456)
+
+data<-data.2015
+
+data.size<-nrow(data)
+data.cols<-ncol(data)
+num.folds<-10
+
+rmse.step<-c()
+rmse.man<-c()
+
+data["fold"]<-floor(runif(data.size)*num.folds)+1
+data$fold<-factor(data$fold)
+
+for(i in c(1:num.folds)){
+    
+    train.data<-data[(data$fold!=i), 1:(data.cols)]
+    test.data<-data[(data$fold==i),1:(data.cols)]
+    
+   fit.step.pred <- lm(Happiness.Score ~ GDP + Family + Health + Freedom + Generosity + Corruption, data = data.2015)
+    
+    fit.man.pred <- lm(Happiness.Score ~ GDP + Family + Health + Freedom + Corruption, data = data.2015)
+    
+    pred.step.mat<-predict (fit.step.pred, test.data, interval="prediction", level=0.95)
+   
+    pred.man.mat<-predict (fit.man.pred, test.data, interval="prediction", level=0.95)
+    
+    
+    pred.step.vals<-pred.step.mat[,1]
+    pred.man.vals<-pred.man.mat[,1]
+    
+    
+    actual.values<-test.data$Happiness.Score
+    
+    # calculate the RMSE for each model and add to their respective vectors
+    rmse.step<-c(rmse.step, sqrt(mean((actual.values - pred.step.vals)^2, na.rm = TRUE)))
+    rmse.man<-c(rmse.man, sqrt(mean((actual.values - pred.man.vals)^2, na.rm = TRUE)))
+}
+
+
+```
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+title.str<-paste("RMSE Over", num.folds, "Folds", sep=" ")
+plot(rmse.step, main = title.str,
+     xlab = "fold",
+     xaxp = c(1, num.folds, num.folds-1),
+     ylab = "rmse",
+     col = "blue")
+lines(rmse.step, col = "blue")
+points(rmse.man, col="red")
+lines(rmse.man, col = "red")
+
+legend("topleft", legend=c("step", "man"),
+       col=c("blue", "red"), lty=1:1, cex=0.8)
+```
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+boxplot(rmse.step,rmse.man, names = c("step", "man"), xlab = "RMSE of Two Regression Models Fitted on 2015 Data")
+
+
+```
+
+From these observations, we can see that the step model has a lower RMSE at 3 folds of our validation, and has a higher variance. The man model had a lower variance, along with a similar RMSE. We therefore find this model more accurate. 
+
+
+---
+Here, we do the same for our 2019 data. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+fit2.2019 <- lm(formula = Score ~ GDP + Family + 
+    Health + Freedom + Corruption, 
+    data = data.2019)
+
+plot(fit2.2019$residuals~fit2.2019$fitted.values)
+abline(h=0)
+
+qqnorm(fit2.2019$residuals)
+
+shapiro.test(fit2.2019$residuals)
+
+
+
+# set the seed according to the current version of R
+RNGversion("4.1.2")
+set.seed(123456)
+
+data2019 <- data.2019
+
+data.size<-nrow(data2019)
+data.cols<-ncol(data2019)
+num.folds2019<-10
+
+rmse.step2019<-c()
+rmse.man2019<-c()
+
+data2019["fold"]<-floor(runif(data.size)*num.folds2019)+1
+data2019$fold<-factor(data2019$fold)
+
+for(i in c(1:num.folds)){
+    
+    train.data2019 <-data2019[(data2019$fold!=i), 1:(data.cols)]
+    test.data2019 <-data2019[(data2019$fold==i),1:(data.cols)]
+    
+   fit.step.pred2019 <- lm(Score ~ GDP + Family + Health + Freedom + Generosity + Corruption, data = data2019)
+    
+    fit.man.pred2019 <- lm(Score ~ GDP + Family + Health + Freedom + Corruption, data = data2019)
+    
+    pred.step.mat2019 <-predict (fit.step.pred2019, test.data2019, interval="prediction", level=0.95)
+   
+    pred.man.mat2019 <-predict (fit.man.pred2019, test.data2019, interval="prediction", level=0.95)
+    
+    
+    pred.step.vals2019 <-pred.step.mat2019[,1]
+    pred.man.vals2019 <-pred.man.mat2019[,1]
+    
+    
+    actual.values2019<-test.data2019$Score
+    
+    # calculate the RMSE for each model and add to their respective vectors
+    rmse.step2019 <-c(rmse.step2019, sqrt(mean((actual.values2019 - pred.step.vals2019)^2, na.rm = TRUE)))
+    rmse.man2019 <-c(rmse.man2019, sqrt(mean((actual.values2019 - pred.man.vals2019)^2, na.rm = TRUE)))
+}
+
+title.str<-paste("RMSE Over", num.folds, "Folds", sep=" ")
+plot(rmse.step2019, main = title.str,
+     xlab = "fold",
+     xaxp = c(1, num.folds, num.folds-1),
+     ylab = "rmse",
+     col = "blue")
+lines(rmse.step2019, col = "blue")
+points(rmse.man2019, col="red")
+lines(rmse.man2019, col = "red")
+
+legend("topleft", legend=c("step", "man"),
+       col=c("blue", "red"), lty=1:1, cex=0.8)
+
+boxplot(rmse.step2019,rmse.man2019, names = c("step", "man"), xlab = "RMSE of Two Regression Models Fitted on 2019 Data")
+
+```
+
+We completed another set of tests for the 2019 model, where we see that the residuals are normally distributed around the fitted values, and the qq plot forms a straight line, along with a p value from the Shapiro-Wilk test of 0.03, which leads to the assumption that our residuals are normally distributed. 
+Looking at the RMSE for the two models, we can see that the step model (shown in blue on the chart) has a lower RMSE overall for more of the folds. In the boxplot, we see that the step model has a slightly higher variance, but due to the relative similarity of the variances, we determine that the step model is better at predicting our Happiness Score. 
+
+
+## Decision Trees
+
+The next portion of our modeling uses decision trees to observe the relative importance of variables on happiness score and create a prediction model for happiness scores. First, we build a tree for our 2015 data, which is shown below. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+# uses tree libraries
+
+# Normal Tree:
+tree.2015 <- tree(Happiness.Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2015, method = "anova")
+
+plot(tree.2015)
+text(tree.2015)
+tree.2015
+```
+
+Next, we use a random forest model and a boosted tree model to gain multiple perspectives on the most indicative variables for Happiness Score. The first chart below uses the Random Forest to demonstrate the varying importance of the variables, and then shows the same for the boosted tree model. As you can see from both of these models, the most important variable in 2015 was GDP or economic prosperity, followed by Family or social support, Health, and Freedom. Health occasionally outranked Family. 
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+# Random Forest
+set.seed(12345)
+rf.2015 <-randomForest(Happiness.Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2015, mtry=6, importance=TRUE)
+
+
+varImpPlot(rf.2015)
+
+# Boosted Tree Model
+set.seed(12345)
+boost.2015<-gbm(Happiness.Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2015, distribution="gaussian", n.trees=5000, interaction.depth=4)
+summary(boost.2015)
+
+```
+Next, we do the same for our 2019 data, creating a tree model, a random forest model, and a boosted tree model. 
+
+
+```{r, echo = FALSE, warning= FALSE, message=FALSE, results='hide'}
+
+# Normal Tree:
+tree.2019 <- tree(Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2019, method = "anova")
+
+plot(tree.2019)
+text(tree.2019)
+tree.2019
+
+# Random Forest
+set.seed(12345)
+rf.2019 <-randomForest(Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2019, mtry=6, importance=TRUE)
+
+varImpPlot(rf.2019)
+
+# Boosted Tree Model
+set.seed(12345)
+boost.2019<-gbm(Score ~ Generosity + Corruption + Freedom + Health + Family + GDP, data = data.2019, distribution="gaussian", n.trees=5000, interaction.depth=4)
+summary(boost.2019)
+
+
+```
+
+With our 2019 data here, we can see some discrepancies between the random forest model and the boosted tree model. The tree model and the random forest ranks Family as the highest, with GDP and Health tied for second place. The boosted tree model states that Health is first, with Family as a close second and GDP following after. Based on these results and the relative accuracy of our models, we can infer that the two most important factors are Family and Health, with GDP following after. 
+
+
+# Part 3: Conclusion
+
+
+In short, we have found that there are several factors that connect to the Happiness Score of a country. Based on our regression model, we have determined that Generosity and Corruption are not very strong factors (as they're p values are greater than 0.05 suggesting they are not significant). Based on our decision tree models, we have additionally found that the most important factors have varied over the years from being largely GDP and economically based, to including values such as a sense of social support, and a healthy life expectancy. These factors are critical to creating a happier country, which leads to the inference that these should be important factors that countries take into account for themselves and others. 
+
+In order to reach these results, we looked at the correlation between individual factors and Happiness Score using scatter-plots. We then created a boxplot in order to see how Happiness Scores for the world changed over time. From there, we completed a regression model, which we tested to ensure the residuals were normally distributed. We additionally used step-wise regression to find the best models, and then compared RMSE values of those models over 10 fold validation to finally determine an accurate model for our 2015 and 2019 happiness scores. 
+Next, we created a decision tree, a random forest model, and a boosted tree model in order to gain a holistic view of the most important factors for happiness. We graphed the relative importance of variables for each of these models, and compared their accuracy using relative importance charts. We also created a photo of the decision trees for simple understanding of how factors are combined to create a Happiness Score. The decision tree also shows both variables corruption and generosity lower on the list which confirms the results we saw in our regression model as well.  
+
+
